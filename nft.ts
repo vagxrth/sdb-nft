@@ -2,7 +2,7 @@ import { clusterApiUrl, Connection, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { createNft, fetchDigitalAsset, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata'
 import { airdropIfRequired, getExplorerLink, getKeypairFromFile } from '@solana-developers/helpers'
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults'
-import { generateSigner, keypairIdentity, percentAmount } from '@metaplex-foundation/umi';
+import { generateSigner, keypairIdentity, percentAmount, publicKey } from '@metaplex-foundation/umi';
 
 const connection = new Connection(clusterApiUrl('devnet'));
 
@@ -16,19 +16,23 @@ umi.use(mplTokenMetadata());
 const umiUser = umi.eddsa.createKeypairFromSecretKey(user.secretKey);
 umi.use(keypairIdentity(umiUser));
 
-const collectionMint = generateSigner(umi);
+const collectionAddress = publicKey("6d1XemCWnS7skbc1CSr6LJaDD42Y3TLkRQNWMAEAdLqF");
+
+const mint = generateSigner(umi);
 
 const transaction = await createNft(umi, {
-    mint: collectionMint,
-    name: "Vagarth's Collection",
-    symbol: "VAH",
-    uri: "https://raw.githubusercontent.com/solana-developers/professional-education/main/labs/sample-nft-collection-offchain-data.json",
+    mint: mint,
+    name: "Third World Tyrant",
+    uri: "https://raw.githubusercontent.com/solana-developers/professional-education/main/labs/sample-nft-offchain-data.json",
     sellerFeeBasisPoints: percentAmount(0),
-    isCollection: true
-});
+    collection: {
+        key: collectionAddress,
+        verified: false
+    }
+})
 
 await transaction.sendAndConfirm(umi);
 
-const collectionNFT = await fetchDigitalAsset(umi, collectionMint.publicKey);
+const nft = await fetchDigitalAsset(umi, mint.publicKey);
 
-console.log(`Collection Created at Address ${getExplorerLink('address', collectionNFT.mint.publicKey, 'devnet')}`)
+console.log(`NFT Created at Address ${getExplorerLink('address', nft.mint.publicKey, 'devnet')}`)
